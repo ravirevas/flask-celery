@@ -2,6 +2,7 @@ from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Date, text
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 import datetime
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 #from conf.config_manager import GlobalConf
@@ -208,9 +209,10 @@ class RuleLog(Base):
 
     __table_args__ = (PrimaryKeyConstraint("id", "rule_assignment_id", "rule_set_assignment_id"), )
 
-    def __init__(self,id, rule_assignment_id,rule_set_assignment_id,rule_end_ts,batch_dt,target_sql_query,source_sql_query,target_result_value,source_result_value,result,status,partition_type,seq_num):
+    def __init__(self,id, rule_assignment_id,data_dt,rule_set_assignment_id,rule_end_ts,batch_dt,target_sql_query,source_sql_query,target_result_value,source_result_value,result,status,partition_type,seq_num):
         self.id=id
         self.rule_assignment_id = rule_assignment_id
+        self.data_dt=data_dt
         self.rule_set_assignment_id = rule_set_assignment_id
         self.rule_end_ts = rule_end_ts
         self.batch_dt = batch_dt
