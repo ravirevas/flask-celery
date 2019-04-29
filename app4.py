@@ -1,18 +1,14 @@
 import subprocess
 import time
-#from datetime import datetime
+# from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 from metastore_model import *
 from tasks import *
 
-
-
-
 app = Flask(__name__)
 # app.config['SQLALCHEMY_DATABASE_URI'] ='mysql+pymysql://root:root@localhost:3306/test3'
-#app.config['SECRET_KEY'] = 'super secret key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost:3306/test3'
 app.config['SQLALCHEMY_ECHO'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -655,18 +651,15 @@ class RuleLogSchema(ma.Schema):
             'partition_type', 'seq_num', 'create_ts', 'update_ts')
 
 
-
-
 RuleLog_schema = RuleLogSchema(strict=True)
 RuleLogs_schema = RuleLogSchema(many=True)
-
 
 
 @app.route("/rulelog", methods=["POST"])
 def add_rulelog():
     id = request.json['id']
     rule_assignment_id = request.json['rule_assignment_id']
-    data_dt=request.json['data_dt']
+    data_dt = request.json['data_dt']
     rule_set_assignment_id = request.json['rule_set_assignment_id']
     rule_end_ts = request.json['rule_end_ts']
     batch_dt = request.json['batch_dt']
@@ -679,7 +672,8 @@ def add_rulelog():
     partition_type = request.json['partition_type']
     seq_num = request.json['seq_num']
 
-    new_rulelog = RuleLog(id, rule_assignment_id,data_dt,rule_set_assignment_id,rule_end_ts, batch_dt, target_sql_query,
+    new_rulelog = RuleLog(id, rule_assignment_id, data_dt, rule_set_assignment_id, rule_end_ts, batch_dt,
+                          target_sql_query,
                           source_sql_query, target_result_value, source_result_value, result, status, partition_type,
                           seq_num)
 
@@ -710,56 +704,92 @@ def rulelog_delete(id):
 
     return RuleLog_schema.jsonify(rulelog_id_del)
 
-#get all details by request_id
+
+# get all details by request_id
 @app.route('/request_id/<request_id>')
 def get_status(request_id):
-    #resultss = db.session.query(RuleLog.status).filter_by(data_dt="2019-04-09").first()
-    #results_max=db.session.query(func.max(RuleLog.create_ts)).first()
-    #print("###############")
-    #print(results_max[0])
-    results=db.session.query(RuleLog).filter_by(id=request_id).first()
+    # resultss = db.session.query(RuleLog.status).filter_by(data_dt="2019-04-09").first()
+    # results_max=db.session.query(func.max(RuleLog.create_ts)).first()
+    # print("###############")
+    # print(results_max[0])
+    results = db.session.query(RuleLog).filter_by(id=request_id).first()
     if results is None:
         return "No such id in logs tables "
 
     else:
-     result_id_name = RuleLog_schema.dump(results)
-     return jsonify(result_id_name.data)
+        result_id_name = RuleLog_schema.dump(results)
+        return jsonify(result_id_name.data)
 
 
-
-#get all rules from log by rulesetname pattern
+# get all rules from log by rulesetname pattern
 @app.route('/filter_rules/<rulesetname>')
 def get_all(rulesetname):
-   result= db.session.query(RuleLog).filter(RuleLog.id.like('%' + rulesetname + '%')).all()
-   result_id_name = RuleLogs_schema.dump(result)
-   return jsonify(result_id_name.data)
+    result = db.session.query(RuleLog).filter(RuleLog.id.like('%' + rulesetname + '%')).all()
+    result_id_name = RuleLogs_schema.dump(result)
+    return jsonify(result_id_name.data)
 
 
 @app.route('/startdqs/<rulesetname>')
 @app.route('/startdqs/<rulesetname>/<data_date>')
 @app.route('/startdqs/<rulesetname>/<data_date>/<batch_date>')
-
-def run_dq(rulesetname,data_date=None,batch_date=None):
-    rule_set_valid=is_ruleset_exists(rulesetname)
+@app.route('/startdqs/<rulesetname>/<data_date>/<batch_date>/<sequence_number>')
+def run_dq(rulesetname, data_date=None, batch_date=None, sequence_number=0):
+    print("###########Running a sync call i.e waiting for result then move forward####################")
+    file_log = open("logs_from_execution_dq.log", "a+")
+    rule_set_valid = is_ruleset_exists(rulesetname)
     if rule_set_valid is not None:
         print("##########printing command###########")
-        command_ruleset = create_command_to_run(rulesetname,data_date,batch_date)
+        command_ruleset = create_command_to_run(rulesetname, data_date, batch_date, sequence_number)
         print(command_ruleset)
-        #a=subprocess.Popen(command_ruleset, shell=True) ##for shell
-        #a.wait()  ## for shell
-        run_dq_command = subprocess.Popen(command_ruleset, shell=True)
-        #run_dq_command.communicate() #to wait for result
-        time.sleep(3)
-        print("Fetch request_id for database that just started")
-        request_id = fetch_id_from_rule_log_id(rulesetname)
-        return "REQUEST_ID:\t" + request_id
+        # a=subprocess.Popen(command_ruleset, shell=True) ##for shell
+        # a.wait()  ## for shell
+        run_dq_command = subprocess.Popen(command_ruleset, stdout=file_log, stderr=file_log, shell=True)
+        run_dq_command.communicate()  # to wait for result
+        # time.sleep(3)
+        print('########Check return code#######')
+        exit_code = run_dq_command.returncode
+        if exit_code is 0:
+            print("Fetch request_id for database that just started")
+            request_id = fetch_id_from_rule_log_id(rulesetname, data_date, batch_date)
+            if request_id is not None:
+                id_details = get_all(request_id)
+                return id_details
+            else:
+                return '{ "messgae":"Query returned null i.e No entry for ruleset"}'
+        else:
+            return '{ "message:"Script has failed for some reason please check the dq logs"}'
 
     else:
-        return "No such rule, please add the rule in the data store first"
+        return '{ "message":"No such Rulesetname in metastore please add this to metastore"}'
+
+
+
+@app.route('/startdqn/<rulesetname>')
+@app.route('/startdqn/<rulesetname>/<data_date>')
+@app.route('/startdqn/<rulesetname>/<data_date>/<batch_date>')
+@app.route('/startdqn/<rulesetname>/<data_date>/<batch_date>/<sequence_number>')
+def run_dqn(rulesetname, data_date=None, batch_date=None, sequence_number=0):
+    print("###########Running a async call i.e will run script in background(use request id to get info)####################")
+    file_log = open("logs_from_execution_dq.log", "a+")
+    rule_set_valid = is_ruleset_exists(rulesetname)
+    if rule_set_valid is not None:
+        print("##########printing command###########")
+        command_ruleset = create_command_to_run(rulesetname, data_date, batch_date, sequence_number)
+        print(command_ruleset)
+        # a=subprocess.Popen(command_ruleset, shell=True) ##for shell
+        # a.wait()  ## for shell
+        run_dq_command = subprocess.Popen(command_ruleset, stdout=file_log, stderr=file_log, shell=True)
+        time.sleep(3)
+
+        print("Fetch request_id for database that just started")
+        request_id = fetch_id_from_rule_log_id(rulesetname, data_date, batch_date)
+        return request_id
+
+    else :
+        return "No such rule"
+
 
 
 
 if __name__ == '__main__':
-
     app.run(debug=True)
-
