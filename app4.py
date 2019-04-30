@@ -786,12 +786,11 @@ def run_dqn(rulesetname, data_date=None, batch_date=None, sequence_number=0):
         print("Fetch request_id for database that just started")
         request_id = fetch_id_from_rule_log_id(rulesetname, data_date, batch_date)
         if ('None' in request_id):
-         return '{"message":"SQL QUERY FAILED TO FETCH ID FROM LOG TABLE RETURNED NULL"}'
+         return '{"message":"SQL Query Returned Null (from the log metastore)"}'
         else:
-            return request_id
-
+            return '{"request_id":"'+request_id+'","url":"http://127.0.0.1:5000/request_id/'+request_id+'"}'
     else :
-        return "No such rule"
+        return '{"message":""No such rule"}'
 
 
 
