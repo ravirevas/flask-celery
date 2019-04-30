@@ -790,7 +790,7 @@ def run_dqn(rulesetname, data_date=None, batch_date=None, sequence_number=0):
         else:
             return '{"request_id":"'+request_id+'","url":"http://127.0.0.1:5000/request_id/'+request_id+'"}'
     else :
-        return '{"message":""No such rule"}'
+        return '{"message":"No such rule"}'
 
 
 
