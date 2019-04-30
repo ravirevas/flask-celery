@@ -8,8 +8,9 @@ def generate_request_id(rulesetname):
 
 
 def create_command_to_run(rulesetname,data_date,batch_date,sequence_number):
-    full_command = "C:\\Users\\Ravi\\Desktop\\sample.py --rulesetname "+rulesetname+"  --data_date "+str(data_date) + " --batch_date "+str(batch_date) + " --seqnum "+str(sequence_number)
-    return full_command
+     full_command = "C:\\Users\\Ravi\\Desktop\\sample.py --rulesetname "+rulesetname+"  --data_date "+str(data_date) + " --batch_date "+str(batch_date) + " --seqnum "+str(sequence_number)
+     return full_command
+
 
 
 def check_for_dq_process(rulesetname,data_date,batch_date,sequence_number):
@@ -54,17 +55,27 @@ def fetch_id_from_rule_log_id(rulesetname,data_date,batch_date):
     db.session.commit()
     if data_date is not None and batch_date is not None:
         print("#####Have all parameters#######")
+        #rulesetname="ass"
         req_id=db.session.query(RuleLog.id,RuleLog.create_ts).filter(RuleLog.id.like(rulesetname+'%'),RuleLog.data_dt == data_date,RuleLog.batch_dt == batch_date).order_by(RuleLog.create_ts.desc()).first()
-        id = req_id[0]
-        return id
+        id = req_id
+        if id is not None:
+            return id[0]
+        else:
+            save="None"
+            return save
+
     elif data_date is not None and batch_date is  None :
         print("###No batch date#######")
         req_id = db.session.query(RuleLog.id, RuleLog.create_ts).filter(RuleLog.id.like(rulesetname + '%'),
                                                                         RuleLog.data_dt == data_date,
                                                                         ).order_by(
             RuleLog.create_ts.desc()).first()
-        id = req_id[0]
-        return id
+        id = req_id
+        if id is not None:
+            return id[0]
+        else:
+            save="None"
+            return save
 
     elif data_date is  None and batch_date is not None:
         print("##No datadate ##")
@@ -72,16 +83,24 @@ def fetch_id_from_rule_log_id(rulesetname,data_date,batch_date):
                                                                         RuleLog.batch_dt == batch_date,
                                                                         ).order_by(
             RuleLog.create_ts.desc()).first()
-        id = req_id[0]
-        return id
+        id = req_id
+        if id is not None:
+            return id[0]
+        else:
+            save="None"
+            return save
 
     else:
-        print("#######just have rulesetname##########")
+        print("#######just have rulesetname or have sequence no.##########")
         req_id = db.session.query(RuleLog.id, RuleLog.create_ts).filter(RuleLog.id.like(rulesetname + '%'),
                                                                         ).order_by(
             RuleLog.create_ts.desc()).first()
-        id = req_id[0]
-        return id
+        id = req_id
+        if id is not None:
+            return id[0]
+        else:
+            save="None"
+            return save
 
 
 def check_prev_datadate_is_done(rulesetname,datadate):

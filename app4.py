@@ -751,13 +751,15 @@ def run_dq(rulesetname, data_date=None, batch_date=None, sequence_number=0):
         if exit_code is 0:
             print("Fetch request_id for database that just started")
             request_id = fetch_id_from_rule_log_id(rulesetname, data_date, batch_date)
-            if request_id is not None:
-                id_details = get_all(request_id)
-                return id_details
+            print('####request_id###########')
+            print(request_id)
+            if "None" in request_id:
+                return '{"message": "sql query to fetch id from log table returned null after script has returned with exit code 0"}'
             else:
-                return '{ "messgae":"Query returned null i.e No entry for ruleset"}'
+             id_details = get_all(request_id)
+             return id_details
         else:
-            return '{ "message:"Script has failed for some reason please check the dq logs"}'
+            return '{ "message":"Script has failed (returned exit code 1) for some reason please check the dq logs"}'
 
     else:
         return '{ "message":"No such Rulesetname in metastore please add this to metastore"}'
@@ -783,7 +785,10 @@ def run_dqn(rulesetname, data_date=None, batch_date=None, sequence_number=0):
 
         print("Fetch request_id for database that just started")
         request_id = fetch_id_from_rule_log_id(rulesetname, data_date, batch_date)
-        return request_id
+        if ('None' in request_id):
+         return '{"message":"SQL QUERY FAILED TO FETCH ID FROM LOG TABLE RETURNED NULL"}'
+        else:
+            return request_id
 
     else :
         return "No such rule"
