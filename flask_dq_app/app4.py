@@ -4,12 +4,25 @@ import time
 from flask import Flask, request, jsonify
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
-from metastore_model import *
-from tasks import *
+from flask_dq_app.metastore_model import *
+from flask_dq_app.tasks import *
+
+# from datetime import datetime
+from flask_dq_app.tasks import *
+import configparser
+
+config = configparser.ConfigParser()
+config.read('C:\\Users\\Ravi\\PycharmProjects\\flask-celery\\conf\\config.ini')
+username = config.get('MySQL_METASTORE', 'username')
+password = config.get('MySQL_METASTORE', 'password')
+hostname = config.get('MySQL_METASTORE', 'host')
+databaseType = config.get('MySQL_METASTORE', 'databaseType')
+port = config.get('MySQL_METASTORE', 'port')
+databaseName = config.get('MySQL_METASTORE', 'databaseName')
 
 app = Flask(__name__)
 # app.config['SQLALCHEMY_DATABASE_URI'] ='mysql+pymysql://root:root@localhost:3306/test3'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost:3306/test3'
+app.config['SQLALCHEMY_DATABASE_URI'] = databaseType+"+"+'pymysql://'+username+':'+password+'@'+hostname+":"+port+"/"+databaseName
 app.config['SQLALCHEMY_ECHO'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)

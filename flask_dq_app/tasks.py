@@ -1,5 +1,4 @@
-from metastore_model import *
-from app4 import *
+from flask_dq_app.app4 import *
 
 
 def generate_request_id(rulesetname):
