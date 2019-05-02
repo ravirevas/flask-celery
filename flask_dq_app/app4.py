@@ -727,7 +727,7 @@ def get_status(request_id):
     # print(results_max[0])
     results = db.session.query(RuleLog).filter_by(id=request_id).first()
     if results is None:
-        return "No such id in logs tables "
+        return '{"message":"No such id in rule log table"}'
 
     else:
         result_id_name = RuleLog_schema.dump(results)
