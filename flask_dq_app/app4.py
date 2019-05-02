@@ -22,8 +22,9 @@ databaseName = config.get('MySQL_METASTORE', 'databaseName')
 
 app = Flask(__name__)
 # app.config['SQLALCHEMY_DATABASE_URI'] ='mysql+pymysql://root:root@localhost:3306/test3'
-app.config['SQLALCHEMY_DATABASE_URI'] = databaseType+"+"+'pymysql://'+username+':'+password+'@'+hostname+":"+port+"/"+databaseName
-app.config['SQLALCHEMY_ECHO'] = True
+app.config[
+    'SQLALCHEMY_DATABASE_URI'] = databaseType + "+" + 'pymysql://' + username + ':' + password + '@' + hostname + ":" + port + "/" + databaseName
+# app.config['SQLALCHEMY_ECHO'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 # init marshmallow
@@ -77,7 +78,6 @@ def update_datastore(id):
     datastore_id.name = name
     datastore_id.zone = zone
     datastore_id.conn_type = conn_type
-
     db.session.commit()
     return Datastore_schema.jsonify(datastore_id)
 
@@ -87,6 +87,15 @@ def get_datastore():  # dump all table 1 data
     datastore_query = db.session.query(Datastore).all()
     result_datastore = Datastores_schema.dump(datastore_query)
     return jsonify(result_datastore.data)
+
+
+@app.route("/datastore/save/", methods=["GET"])
+def get_datastore():  # dump all table 1 data
+
+    datastore_query = db.getSession().query(Datastore).all()
+    result_datastore = Datastores_schema.dump(datastore_query)
+    return jsonify(result_datastore.data)
+
 
 
 # endpoint to get user detail by id
@@ -741,7 +750,8 @@ def get_all(rulesetname):
     result_id_name = RuleLogs_schema.dump(result)
     return jsonify(result_id_name.data)
 
-#this route will wait for the script to execute first and then fetch all the details after execution
+
+# these route will wait for the script to execute first and then fetch all the details after execution
 @app.route('/startdqs/<rulesetname>')
 @app.route('/startdqs/<rulesetname>/<data_date>')
 @app.route('/startdqs/<rulesetname>/<data_date>/<batch_date>')
@@ -769,8 +779,8 @@ def run_dq(rulesetname, data_date=None, batch_date=None, sequence_number=0):
             if "None" in request_id:
                 return '{"message": "sql query to fetch id from log table returned null after script has returned with exit code 0"}'
             else:
-             id_details = get_all(request_id)
-             return id_details
+                id_details = get_all(request_id)
+                return id_details
         else:
             return '{ "message":"Script has failed (returned exit code 1) for some reason please check the dq logs"}'
 
@@ -778,13 +788,14 @@ def run_dq(rulesetname, data_date=None, batch_date=None, sequence_number=0):
         return '{ "message":"No such Rulesetname in metastore please add this to metastore"}'
 
 
-#this route will trigger the script(in background) and fetch id from rule log table and that id can use to monitor the progress
+#these route will trigger the script(in background) and fetch id from rule log table and that id can use to monitor the progress
 @app.route('/startdqn/<rulesetname>')
 @app.route('/startdqn/<rulesetname>/<data_date>')
 @app.route('/startdqn/<rulesetname>/<data_date>/<batch_date>')
 @app.route('/startdqn/<rulesetname>/<data_date>/<batch_date>/<sequence_number>')
 def run_dqn(rulesetname, data_date=None, batch_date=None, sequence_number=0):
-    print("###########Running a async call i.e will run script in background(use request id to get info)####################")
+    print(
+        "###########Running a async call i.e will run script in background(use request id to get info)####################")
     file_log = open("logs_from_execution_dq.log", "a+")
     rule_set_valid = is_ruleset_exists(rulesetname)
     if rule_set_valid is not None:
@@ -799,14 +810,12 @@ def run_dqn(rulesetname, data_date=None, batch_date=None, sequence_number=0):
         print("Fetch request_id for database that just started")
         request_id = fetch_id_from_rule_log_id(rulesetname, data_date, batch_date)
         if ('None' in request_id):
-         return '{"message":"SQL Query Returned Null i.e Null Returned or Script failed"}'
+            return '{"message":"SQL Query Returned Null i.e Null Returned or Script failed"}'
         else:
-            return '{"request_id":"'+request_id+'","url":"http://127.0.0.1:5000/request_id/'+request_id+'"}'
-    else :
+            return '{"request_id":"' + request_id + '","url":"http://127.0.0.1:5000/request_id/' + request_id + '"}'
+    else:
         return '{"message":"No such rule"}'
 
 
-
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

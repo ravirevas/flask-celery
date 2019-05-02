@@ -52,7 +52,7 @@ def addtodict(mylist,user,rulesetname,date_time):
 #check i like
 def fetch_id_from_rule_log_id(rulesetname,data_date,batch_date):
     db.session.commit()
-    if data_date is not None and (batch_date is not None or "None" not in batch_date):
+    if data_date is not None and (batch_date is not None and "None" not in batch_date):
         print("#####Running with data date and batch date#######")
         #rulesetname="ass"
         req_id=db.session.query(RuleLog.id,RuleLog.create_ts).filter(RuleLog.id.like(rulesetname+'%'),RuleLog.data_dt == data_date,RuleLog.batch_dt == batch_date).order_by(RuleLog.create_ts.desc()).first()
